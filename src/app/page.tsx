@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { CryptoCardBackground } from "@/components/ui/CryptoCardBackground";
@@ -11,17 +11,36 @@ import {
 import { AddTransactionDialog } from "@/components/features/AddTransactionDialog";
 import { MonthFilter } from "@/components/features/MonthFilter";
 import { OverviewAreaChart } from "@/components/features/charts/OverviewAreaChart";
-import { useFinanceStore, formatMoney, formatDate } from "@/lib/store";
+import { useFinanceStore, formatMoney } from "@/lib/store";
 import { ICON_MAP } from "@/lib/icon-library";
 import { format, isToday, isYesterday, parseISO } from "date-fns";
 import { vi } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // HOME PAGE - DYNAMIC DASHBOARD
 // ═══════════════════════════════════════════════════════════════════════════
 
 export default function HomePage() {
+  const router = useRouter();
+  const [transactionOpen, setTransactionOpen] = useState(false);
+  const [transactionType, setTransactionType] = useState<"income" | "expense">("expense");
+
+  const handleOpenTransaction = (type: "income" | "expense") => {
+    setTransactionType(type);
+    setTransactionOpen(true);
+  };
+
+  const handleAIScan = () => {
+    setTransactionType("expense"); // Start with expense for scan usually
+    setTransactionOpen(true);
+    // Ideally trigger scan here, but for now just open dialog.
+    // We can use a toast to guide user or just let them click.
+    setTimeout(() => toast.info("Chọn 'Scan Hóa Đơn' để AI tự điền thông tin!"), 500);
+  };
+
   const {
     transactions,
     accounts,
@@ -138,20 +157,53 @@ export default function HomePage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-        <AddTransactionDialog />
+      <AddTransactionDialog
+        open={transactionOpen}
+        onOpenChange={setTransactionOpen}
+        defaultTab={transactionType}
+      />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* + Thu */}
+        <Button
+          className="h-20 flex-col gap-1 rounded-2xl bg-[#22C55E]/10 border border-[#22C55E]/20 text-[#22C55E] hover:bg-[#22C55E]/20 hover:scale-[1.02] transition-all"
+          onClick={() => handleOpenTransaction("income")}
+        >
+          <ArrowUpRight className="h-6 w-6" />
+          <span className="font-bold">Thu Nhập</span>
+        </Button>
 
+        {/* + Chi */}
+        <Button
+          className="h-20 flex-col gap-1 rounded-2xl bg-[#EF4444]/10 border border-[#EF4444]/20 text-[#EF4444] hover:bg-[#EF4444]/20 hover:scale-[1.02] transition-all"
+          onClick={() => handleOpenTransaction("expense")}
+        >
+          <ArrowDownRight className="h-6 w-6" />
+          <span className="font-bold">Chi Tiêu</span>
+        </Button>
+
+        {/* AI Scan */}
+        <Button
+          className="h-20 flex-col gap-1 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 text-cyan-400 hover:from-cyan-500/30 hover:to-blue-500/30 hover:scale-[1.02] transition-all shadow-lg shadow-cyan-500/10"
+          onClick={handleAIScan}
+        >
+          <Sparkles className="h-6 w-6 animate-pulse" />
+          <span className="font-bold">AI Scan</span>
+        </Button>
+
+        {/* New Quick Action Buttons */}
         <div className="hidden md:contents">
-          {[
-            { icon: <TrendingUp className="h-5 w-5 text-[#22C55E]" />, label: "Báo cáo" },
-            { icon: <span className="text-xl">📊</span>, label: "Ngân sách" },
-            { icon: <span className="text-xl">🎯</span>, label: "Mục tiêu" }
-          ].map((item, i) => (
-            <Button key={i} variant="outline" className="h-16 lg:h-20 flex-col gap-2 rounded-2xl border-white/10 bg-white/5 text-white hover:bg-white/10 hover:border-white/20 transition-all">
-              {item.icon}
-              <span className="text-xs">{item.label}</span>
-            </Button>
-          ))}
+          <Button variant="outline" onClick={() => router.push('/phan-tich')} className="h-16 lg:h-20 flex-col gap-2 rounded-2xl border-white/10 bg-white/5 text-white hover:bg-white/10 hover:border-white/20 transition-all">
+            <TrendingUp className="h-5 w-5 text-[#22C55E]" />
+            <span className="text-xs">Báo cáo</span>
+          </Button>
+          <Button variant="outline" onClick={() => router.push('/quan-ly')} className="h-16 lg:h-20 flex-col gap-2 rounded-2xl border-white/10 bg-white/5 text-white hover:bg-white/10 hover:border-white/20 transition-all">
+            <span className="text-xl">📊</span>
+            <span className="text-xs">Ngân sách</span>
+          </Button>
+          <Button variant="outline" onClick={() => toast.info("Tính năng đang phát triển")} className="h-16 lg:h-20 flex-col gap-2 rounded-2xl border-white/10 bg-white/5 text-white hover:bg-white/10 hover:border-white/20 transition-all">
+            <span className="text-xl">🎯</span>
+            <span className="text-xs">Mục tiêu</span>
+          </Button>
         </div>
       </div>
 
@@ -161,7 +213,12 @@ export default function HomePage() {
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-white text-lg">Lịch sử giao dịch</h3>
-            <button className="text-xs text-[#3B82F6] hover:text-[#3B82F6]/80 font-medium">Xem tất cả</button>
+            <button
+              onClick={() => router.push("/quan-ly")}
+              className="text-xs text-[#3B82F6] hover:text-[#3B82F6]/80 font-medium"
+            >
+              Xem tất cả
+            </button>
           </div>
 
           <div className="space-y-6">
@@ -229,14 +286,17 @@ export default function HomePage() {
           <div className="rounded-2xl border border-white/10 bg-[#0F1635] p-5">
             <div className="flex items-center justify-between mb-5">
               <h3 className="font-bold text-white">Ví của tôi</h3>
-              <Plus className="h-4 w-4 text-[#3B82F6] cursor-pointer" />
+              <Plus
+                className="h-4 w-4 text-[#3B82F6] cursor-pointer hover:scale-110 transition-transform"
+                onClick={() => router.push("/cai-dat")}
+              />
             </div>
 
             <div className="space-y-4">
               {accounts.map((acc) => {
                 const Icon = ICON_MAP[acc.icon] || Wallet;
                 return (
-                  <div key={acc.id} className="flex items-center justify-between group cursor-pointer">
+                  <div key={acc.id} className="flex items-center justify-between group cursor-pointer" onClick={() => router.push("/cai-dat")}>
                     <div className="flex items-center gap-3">
                       <div
                         className="flex h-10 w-10 items-center justify-center rounded-xl transition-all group-hover:scale-110"
@@ -252,7 +312,11 @@ export default function HomePage() {
               })}
             </div>
 
-            <Button variant="ghost" className="w-full mt-4 text-[#3B82F6] text-xs hover:bg-white/5 rounded-xl">
+            <Button
+              variant="ghost"
+              className="w-full mt-4 text-[#3B82F6] text-xs hover:bg-white/5 rounded-xl"
+              onClick={() => router.push("/cai-dat")}
+            >
               Quản lý tài khoản
             </Button>
           </div>
@@ -275,7 +339,10 @@ export default function HomePage() {
                     ? `Tháng này bạn đã tiết kiệm được ${formatMoney(monthlyStats.balance)}. Nên trích 20% vào quỹ đầu tư Crypto.`
                     : "Chi tiêu vượt quá thu nhập! AI gợi ý bạn nên giảm 30% ngân sách 'Ăn uống' tuần này."}
                 </p>
-                <button className="mt-4 text-xs font-bold text-cyan-400 flex items-center gap-1 hover:gap-2 transition-all">
+                <button
+                  onClick={() => router.push("/phan-tich")}
+                  className="mt-4 text-xs font-bold text-cyan-400 flex items-center gap-1 hover:gap-2 transition-all"
+                >
                   Xem chi tiết phân tích <ChevronRight className="h-3 w-3" />
                 </button>
               </div>

@@ -17,6 +17,7 @@ import {
     Edit2,
     Trash2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { format, isWithinInterval, parseISO, isBefore } from "date-fns";
 import { useFinanceStore, type Transaction } from "@/lib/store";
 import { ICON_MAP } from "@/lib/icon-library";
@@ -160,7 +161,7 @@ export function TransactionLedger() {
             header: "Thao tác",
             cell: (info: any) => (
                 <div className="flex gap-2">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-white hover:bg-white/5"><Edit2 className="h-3.5 w-3.5" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => toast.info("Tính năng chỉnh sửa đang được phát triển!")} className="h-8 w-8 text-gray-400 hover:text-white hover:bg-white/5"><Edit2 className="h-3.5 w-3.5" /></Button>
                     <Button variant="ghost" size="icon" onClick={() => deleteTransaction(info.row.original.id)} className="h-8 w-8 text-gray-400 hover:text-rose-400 hover:bg-rose-400/10"><Trash2 className="h-3.5 w-3.5" /></Button>
                 </div>
             ),
@@ -286,7 +287,10 @@ export function TransactionLedger() {
                     </Button>
                 </div>
 
-                <Button className="h-11 px-6 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:opacity-90 shadow-lg shadow-purple-500/20">
+                <Button
+                    className="h-11 px-6 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:opacity-90 shadow-lg shadow-purple-500/20"
+                    onClick={() => toast.info("Tính năng AI Chat đang được phát triển!")}
+                >
                     <MessageSquare className="h-4 w-4 mr-2" /> AI Chat Phân Tích
                 </Button>
             </div>

@@ -90,15 +90,38 @@ const transactionSchema = z.object({
 
 type TransactionFormData = z.infer<typeof transactionSchema>;
 
-export function AddTransactionDialog() {
-    const [open, setOpen] = useState(false);
-    const [type, setType] = useState<DialogTransactionType>("expense");
+interface AddTransactionDialogProps {
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
+    defaultTab?: DialogTransactionType;
+    children?: React.ReactNode; // Custom trigger
+}
+
+export function AddTransactionDialog({
+    open: controlledOpen,
+    onOpenChange: setControlledOpen,
+    defaultTab = "expense",
+    children
+}: AddTransactionDialogProps) {
+    const [internalOpen, setInternalOpen] = useState(false);
+    const isControlled = controlledOpen !== undefined;
+    const open = isControlled ? controlledOpen : internalOpen;
+    const setOpen = isControlled ? setControlledOpen : setInternalOpen;
+
+    const [type, setType] = useState<DialogTransactionType>(defaultTab);
     const [amountValue, setAmountValue] = useState(0);
     const [amountDisplay, setAmountDisplay] = useState("");
     const [ocrMode, setOcrMode] = useState("gemini");
     const [isScanning, setIsScanning] = useState(false);
 
     const { categories, accounts, addTransaction, getCategoriesByType } = useFinanceStore();
+
+    // Reset loop or Sync defaultTab when opening
+    useEffect(() => {
+        if (open) {
+            setType(defaultTab);
+        }
+    }, [open, defaultTab]);
 
     // Filter categories based on type
     const filteredCategories = type === "transfer"
@@ -174,7 +197,7 @@ export function AddTransactionDialog() {
 
     // Reset form when dialog opens
     const handleOpenChange = (newOpen: boolean) => {
-        setOpen(newOpen);
+        if (setOpen) setOpen(newOpen);
         if (newOpen) {
             reset({
                 date: format(new Date(), "yyyy-MM-dd"),
@@ -182,7 +205,7 @@ export function AddTransactionDialog() {
             });
             setAmountValue(0);
             setAmountDisplay("");
-            setType("expense");
+            // Don't reset type here, let the effect handle it or keep current
         }
     };
 
@@ -198,17 +221,23 @@ export function AddTransactionDialog() {
                 type: type === "expense" ? "expense" : "income",
             });
         }
-        setOpen(false);
+        if (setOpen) setOpen(false);
     };
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogTrigger asChild>
-                <Button className="md:col-span-1 h-16 lg:h-20 flex-col gap-2 rounded-2xl bg-gradient-to-r from-[#22C55E] to-[#3B82F6] text-white hover:opacity-90 shadow-[0_0_30px_rgba(34,197,94,0.4)] transition-all duration-300 hover:scale-[1.02]">
-                    <Plus className="h-6 w-6" />
-                    <span className="text-sm font-bold">Thêm Thu Chi</span>
-                </Button>
-            </DialogTrigger>
+            {children ? (
+                <DialogTrigger asChild>
+                    {children}
+                </DialogTrigger>
+            ) : (
+                <DialogTrigger asChild>
+                    <Button className="md:col-span-1 h-16 lg:h-20 flex-col gap-2 rounded-2xl bg-gradient-to-r from-[#22C55E] to-[#3B82F6] text-white hover:opacity-90 shadow-[0_0_30px_rgba(34,197,94,0.4)] transition-all duration-300 hover:scale-[1.02]">
+                        <Plus className="h-6 w-6" />
+                        <span className="text-sm font-bold">Thêm Thu Chi</span>
+                    </Button>
+                </DialogTrigger>
+            )}
 
             <DialogContent className="max-w-2xl gap-0 rounded-3xl border-white/10 bg-[#0B0E23] p-0 overflow-hidden">
                 <input
@@ -398,7 +427,7 @@ export function AddTransactionDialog() {
                             <Button
                                 type="button"
                                 variant="ghost"
-                                onClick={() => setOpen(false)}
+                                onClick={() => setOpen && setOpen(false)}
                                 className="h-11 px-6 rounded-xl text-[#94A3B8]"
                             >
                                 Hủy
